@@ -1,0 +1,55 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           scientist
+version:        0.0.0.0
+build-type:     Simple
+
+library
+  exposed-modules:
+      Scientist
+      Scientist.Candidate
+      Scientist.Control
+      Scientist.Duration
+      Scientist.Experiment
+      Scientist.Experiment.Run
+      Scientist.Result
+      Scientist.Result.Evaluate
+  other-modules:
+      Paths_scientist
+  hs-source-dirs:
+      library
+  default-extensions:
+      NoImplicitPrelude
+  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missing-local-signatures -Wno-missing-safe-haskell-mode -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-safe -Wno-unsafe
+  build-depends:
+      MonadRandom
+    , base >4 && <5
+    , random-shuffle
+    , text
+    , time
+    , unliftio
+    , unliftio-core
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Scientist.Experiment.RunSpec
+      Paths_scientist
+  hs-source-dirs:
+      tests
+  default-extensions:
+      NoImplicitPrelude
+  ghc-options: -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missing-local-signatures -Wno-missing-safe-haskell-mode -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-safe -Wno-unsafe
+  build-depends:
+      base >4 && <5
+    , hspec
+    , scientist
+    , time
+    , unliftio
+  default-language: Haskell2010
