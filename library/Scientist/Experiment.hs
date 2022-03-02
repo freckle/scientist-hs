@@ -206,4 +206,4 @@ experimentEnabledPercent :: MonadIO m => Int -> m Bool
 experimentEnabledPercent n
   | n <= 0 = pure False
   | n >= 100 = pure True
-  | otherwise = liftIO $ evalRandIO $ (> n) <$> getRandomR (0, n)
+  | otherwise = liftIO $ evalRandIO $ (<= n) <$> getRandomR (0, 100)

@@ -6,7 +6,7 @@ module Scientist.Experiment.RunSpec
   ( spec
   ) where
 
-import Prelude
+import Scientist.Test
 
 import Data.Either (partitionEithers)
 import qualified Data.List.NonEmpty as NE
@@ -17,9 +17,8 @@ import Scientist.Duration
 import Scientist.Experiment
 import Scientist.Experiment.Run
 import Scientist.Result
-import Test.Hspec
 import UnliftIO.Concurrent
-import UnliftIO.Exception (StringException(..), fromException, throwString)
+import UnliftIO.Exception (fromException, throwString)
 
 data ExampleResult = A | B | C
   deriving stock (Eq, Show)
@@ -34,9 +33,7 @@ spec = do
         $ setExperimentTry (pure A)
         $ newExperiment "test" (pure A)
 
-      case result of
-        ResultSkipped (Control a) -> a `shouldBe` A
-        _ -> expectationFailure "Expected result to be Skipped"
+      expectSkippedWith result A
 
     it "is ResultSkipped based on enabled" $ do
       result <-
@@ -45,16 +42,12 @@ spec = do
         $ setExperimentTry (pure A)
         $ newExperiment "test" (pure A)
 
-      case result of
-        ResultSkipped (Control a) -> a `shouldBe` A
-        _ -> expectationFailure "Expected result to be Skipped"
+      expectSkippedWith result A
 
     it "is ResultSkipped when no Candidates present" $ do
       result <- experimentRunInternal $ newExperiment "test" (pure A)
 
-      case result of
-        ResultSkipped (Control a) -> a `shouldBe` A
-        _ -> expectationFailure "Expected result to be Skipped"
+      expectSkippedWith result A
 
     it "is ResultMatched if all candidates match" $ do
       result <-
@@ -64,25 +57,22 @@ spec = do
         $ setExperimentTry (pure A)
         $ newExperiment "test" (A <$ threadDelay (100 * 1000))
 
-      case result of
-        ResultMatched rd -> do
-          resultDetailsExperimentName rd `shouldBe` "test"
+      expectMatched result $ \rd -> do
+        resultDetailsExperimentName rd `shouldBe` "test"
 
-          let control = resultDetailsControl rd
-          resultControlValue control `shouldBe` A
-          resultControlDuration control `shouldSatisfy` isDurationNear 0.100
+        let control = resultDetailsControl rd
+        resultControlValue control `shouldBe` A
+        resultControlDuration control `shouldSatisfy` isDurationNear 0.100
 
-          let
-            (failed, succeeded) =
-              partitionEithers
-                $ map resultCandidateValue
-                $ NE.toList
-                $ resultDetailsCandidates rd
+        let
+          (failed, succeeded) =
+            partitionEithers
+              $ map resultCandidateValue
+              $ NE.toList
+              $ resultDetailsCandidates rd
 
-          succeeded `shouldMatchList` [A, A]
-          length failed `shouldBe` 0
-
-        _ -> expectationFailure "Expected result to be Matched"
+        succeeded `shouldMatchList` [A, A]
+        length failed `shouldBe` 0
 
     it "is ResultIgnored if any candidates are ignored" $ do
       let
@@ -97,24 +87,21 @@ spec = do
         $ setExperimentTry (pure B)
         $ newExperiment "test" (pure A)
 
-      case result of
-        ResultIgnored rd -> do
-          resultDetailsExperimentName rd `shouldBe` "test"
+      expectIgnored result $ \rd -> do
+        resultDetailsExperimentName rd `shouldBe` "test"
 
-          let control = resultDetailsControl rd
-          resultControlValue control `shouldBe` A
+        let control = resultDetailsControl rd
+        resultControlValue control `shouldBe` A
 
-          let
-            (failed, succeeded) =
-              partitionEithers
-                $ map resultCandidateValue
-                $ NE.toList
-                $ resultDetailsCandidates rd
+        let
+          (failed, succeeded) =
+            partitionEithers
+              $ map resultCandidateValue
+              $ NE.toList
+              $ resultDetailsCandidates rd
 
-          succeeded `shouldMatchList` [B, C]
-          length failed `shouldBe` 0
-
-        _ -> expectationFailure "Expected result to be Ignored"
+        succeeded `shouldMatchList` [B, C]
+        length failed `shouldBe` 0
 
     it "is ResultMismatched if any candidates mismatched" $ do
       result <-
@@ -124,24 +111,21 @@ spec = do
         $ setExperimentTry (pure A)
         $ newExperiment "test" (pure A)
 
-      case result of
-        ResultMismatched rd -> do
-          resultDetailsExperimentName rd `shouldBe` "test"
+      expectMismatched result $ \rd -> do
+        resultDetailsExperimentName rd `shouldBe` "test"
 
-          let control = resultDetailsControl rd
-          resultControlValue control `shouldBe` A
+        let control = resultDetailsControl rd
+        resultControlValue control `shouldBe` A
 
-          let
-            (failed, succeeded) =
-              partitionEithers
-                $ map resultCandidateValue
-                $ NE.toList
-                $ resultDetailsCandidates rd
+        let
+          (failed, succeeded) =
+            partitionEithers
+              $ map resultCandidateValue
+              $ NE.toList
+              $ resultDetailsCandidates rd
 
-          succeeded `shouldMatchList` [A, B]
-          length failed `shouldBe` 0
-
-        _ -> expectationFailure "Expected result to be Mismatched"
+        succeeded `shouldMatchList` [A, B]
+        length failed `shouldBe` 0
 
     it "rescues exceptions in the Candidate branch" $ do
       result <-
@@ -149,26 +133,23 @@ spec = do
         $ setExperimentTry (throwString "boom")
         $ newExperiment "test" (pure A)
 
-      case result of
-        ResultMismatched rd -> do
-          resultDetailsExperimentName rd `shouldBe` "test"
+      expectMismatched result $ \rd -> do
+        resultDetailsExperimentName rd `shouldBe` "test"
 
-          let
-            control = resultDetailsControl rd
-            mCandidateException =
-              either fromException (const Nothing)
-                $ resultCandidateValue
-                $ NE.head
-                $ resultDetailsCandidates rd
+        let
+          control = resultDetailsControl rd
+          mCandidateException =
+            either fromException (const Nothing)
+              $ resultCandidateValue
+              $ NE.head
+              $ resultDetailsCandidates rd
 
-          resultControlValue control `shouldBe` A
-          mCandidateException `shouldSatisfyMaybe` isStringException "boom"
-
-        _ -> expectationFailure "Expected result to be Mismatched"
+        resultControlValue control `shouldBe` A
+        mCandidateException `shouldSatisfyMaybe` isStringException "boom"
 
     it "does not rescue exceptions in the Control branch" $ do
       experimentRunInternal (newExperiment "test" (throwString "boom"))
-        `shouldThrow` isStringException "boom"
+        `shouldThrowString` "boom"
 
     it "does not rescue exceptions in publishing" $ do
       experimentRunInternal
@@ -176,7 +157,7 @@ spec = do
           $ setExperimentTry (pure B)
           $ newExperiment "test" (pure A)
           )
-        `shouldThrow` isStringException "boom"
+        `shouldThrowString` "boom"
 
     it "can be configured to rescue exceptions in publishing" $ do
       result <-
@@ -186,23 +167,31 @@ spec = do
         $ setExperimentTry (pure B)
         $ newExperiment "test" (pure A)
 
-      case result of
-        ResultMismatched{} -> pure ()
-        _ -> expectationFailure "Expected result to be Mismatched"
+      expectMismatched result $ \_ -> pure ()
 
-shouldSatisfyMaybe
-  :: (HasCallStack, Show a) => Maybe a -> (a -> Bool) -> Expectation
-x `shouldSatisfyMaybe` f = x `shouldSatisfy` maybe False f
+expectSkippedWith :: (Eq a, Show a) => Result c a b -> a -> IO ()
+expectSkippedWith result a =
+  expectSkipped result $ \(Control b) -> b `shouldBe` a
 
-infix 1 `shouldSatisfyMaybe`
+expectSkipped :: Result c a b -> (Control a -> IO ()) -> IO ()
+expectSkipped result f = case result of
+  ResultSkipped x -> f x
+  _ -> expectationFailure "Expected result to be Skipped"
+
+expectMatched :: Result c a b -> (ResultDetails c a b -> IO ()) -> IO ()
+expectMatched result f = case result of
+  ResultMatched rd -> f rd
+  _ -> expectationFailure "Expected result to be Matched"
+
+expectIgnored :: Result c a b -> (ResultDetails c a b -> IO ()) -> IO ()
+expectIgnored result f = case result of
+  ResultIgnored rd -> f rd
+  _ -> expectationFailure "Expected result to be Ignored"
+
+expectMismatched :: Result c a b -> (ResultDetails c a b -> IO ()) -> IO ()
+expectMismatched result f = case result of
+  ResultMismatched rd -> f rd
+  _ -> expectationFailure "Expected result to be Mismatched"
 
 isDurationNear :: NominalDiffTime -> Duration -> Bool
-isDurationNear x (Duration nd)
-  | nd < x - tolerance = False
-  | nd > x + tolerance = False
-  | otherwise = True
-  where tolerance = 0.050
-
-isStringException :: String -> StringException -> Bool
-isStringException a = \case
-  StringException b _cs -> b == a
+isDurationNear x = isWithinOf x 0.050 . unDuration

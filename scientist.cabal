@@ -42,6 +42,8 @@ test-suite spec
   main-is: Spec.hs
   other-modules:
       Scientist.Experiment.RunSpec
+      Scientist.ExperimentSpec
+      Scientist.Test
       Paths_scientist
   hs-source-dirs:
       tests
