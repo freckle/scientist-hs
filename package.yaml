@@ -9,11 +9,16 @@ ghc-options:
   - -Wno-missing-exported-signatures # re-enables missing-signatures
   - -Wno-missing-import-lists
   - -Wno-missing-local-signatures
-  - -Wno-missing-safe-haskell-mode
   - -Wno-monomorphism-restriction
-  - -Wno-prepositive-qualified-module
-  - -Wno-safe
   - -Wno-unsafe
+  - -Wno-safe
+
+
+when:
+  - condition: 'impl(ghc >= 8.10)'
+    ghc-options:
+      - -Wno-missing-safe-haskell-mode
+      - -Wno-prepositive-qualified-module
 
 default-extensions:
   - NoImplicitPrelude
