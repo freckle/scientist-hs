@@ -79,7 +79,7 @@ spec = do
                 $ NE.toList
                 $ resultDetailsCandidates rd
 
-          succeeded `shouldBe` [A, A]
+          succeeded `shouldMatchList` [A, A]
           length failed `shouldBe` 0
 
         _ -> expectationFailure "Expected result to be Matched"
@@ -98,7 +98,23 @@ spec = do
         $ newExperiment "test" (pure A)
 
       case result of
-        ResultIgnored{} -> pure ()
+        ResultIgnored rd -> do
+          resultDetailsExperimentName rd `shouldBe` "test"
+
+          let control = resultDetailsControl rd
+          resultControlValue control `shouldBe` A
+          resultControlDuration control `shouldSatisfy` isDurationNear 0
+
+          let
+            (failed, succeeded) =
+              partitionEithers
+                $ map resultCandidateValue
+                $ NE.toList
+                $ resultDetailsCandidates rd
+
+          succeeded `shouldMatchList` [B, C]
+          length failed `shouldBe` 0
+
         _ -> expectationFailure "Expected result to be Ignored"
 
     it "is ResultMismatched if any candidates mismatched" $ do
@@ -110,7 +126,47 @@ spec = do
         $ newExperiment "test" (pure A)
 
       case result of
-        ResultMismatched{} -> pure ()
+        ResultMismatched rd -> do
+          resultDetailsExperimentName rd `shouldBe` "test"
+
+          let control = resultDetailsControl rd
+          resultControlValue control `shouldBe` A
+          resultControlDuration control `shouldSatisfy` isDurationNear 0
+
+          let
+            (failed, succeeded) =
+              partitionEithers
+                $ map resultCandidateValue
+                $ NE.toList
+                $ resultDetailsCandidates rd
+
+          succeeded `shouldMatchList` [A, B]
+          length failed `shouldBe` 0
+
+        _ -> expectationFailure "Expected result to be Mismatched"
+
+    it "rescues exceptions in the Candidate branch" $ do
+      result <-
+        experimentRunInternal
+        $ setExperimentTry (throwString "boom")
+        $ newExperiment "test" (pure A)
+
+      case result of
+        ResultMismatched rd -> do
+          resultDetailsExperimentName rd `shouldBe` "test"
+
+          let
+            control = resultDetailsControl rd
+            mCandidateException =
+              either fromException (const Nothing)
+                $ resultCandidateValue
+                $ NE.head
+                $ resultDetailsCandidates rd
+
+          resultControlValue control `shouldBe` A
+          resultControlDuration control `shouldSatisfy` isDurationNear 0
+          mCandidateException `shouldSatisfyMaybe` isStringException "boom"
+
         _ -> expectationFailure "Expected result to be Mismatched"
 
     it "does not rescue exceptions in the Control branch" $ do
@@ -137,25 +193,11 @@ spec = do
         ResultMismatched{} -> pure ()
         _ -> expectationFailure "Expected result to be Mismatched"
 
-    it "rescues exceptions in the Candidate branch" $ do
-      result <-
-        experimentRunInternal
-        $ setExperimentTry (throwString "boom")
-        $ newExperiment "test" (pure A)
+shouldSatisfyMaybe
+  :: (HasCallStack, Show a) => Maybe a -> (a -> Bool) -> Expectation
+x `shouldSatisfyMaybe` f = x `shouldSatisfy` maybe False f
 
-      case result of
-        ResultMismatched rd -> do
-          let
-            mStringException =
-              either fromException (const Nothing)
-                $ resultCandidateValue
-                $ NE.head
-                $ resultDetailsCandidates rd
-
-          mStringException
-            `shouldSatisfy` maybe False (isStringException "boom")
-
-        _ -> expectationFailure "Expected result to be Mismatched"
+infix 1 `shouldSatisfyMaybe`
 
 isDurationNear :: NominalDiffTime -> Duration -> Bool
 isDurationNear x (Duration nd)
