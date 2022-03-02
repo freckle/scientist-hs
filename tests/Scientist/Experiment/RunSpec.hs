@@ -60,8 +60,8 @@ spec = do
       result <-
         experimentRunInternal
         $ setExperimentCompare experimentCompareEq
-        $ setExperimentTry (A <$ threadDelay (150 * 1000))
-        $ setExperimentTry (A <$ threadDelay (200 * 1000))
+        $ setExperimentTry (pure A)
+        $ setExperimentTry (pure A)
         $ newExperiment "test" (A <$ threadDelay (100 * 1000))
 
       case result of
@@ -103,7 +103,6 @@ spec = do
 
           let control = resultDetailsControl rd
           resultControlValue control `shouldBe` A
-          resultControlDuration control `shouldSatisfy` isDurationNear 0
 
           let
             (failed, succeeded) =
@@ -131,7 +130,6 @@ spec = do
 
           let control = resultDetailsControl rd
           resultControlValue control `shouldBe` A
-          resultControlDuration control `shouldSatisfy` isDurationNear 0
 
           let
             (failed, succeeded) =
@@ -164,7 +162,6 @@ spec = do
                 $ resultDetailsCandidates rd
 
           resultControlValue control `shouldBe` A
-          resultControlDuration control `shouldSatisfy` isDurationNear 0
           mCandidateException `shouldSatisfyMaybe` isStringException "boom"
 
         _ -> expectationFailure "Expected result to be Mismatched"
