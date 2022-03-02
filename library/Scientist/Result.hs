@@ -45,7 +45,6 @@ data ResultDetails c a b = ResultDetails
 resultDetailsControlValue :: ResultDetails c a b -> a
 resultDetailsControlValue = resultControlValue . resultDetailsControl
 
--- TODO: name, cleaned_value
 data ResultControl a = ResultControl
   { resultControlValue :: a
   , resultControlDuration :: Duration
@@ -56,7 +55,6 @@ runControl control = do
   (Control a, d) <- measureDuration control
   pure ResultControl { resultControlValue = a, resultControlDuration = d }
 
--- TODO: name, cleaned_value
 data ResultCandidate a = ResultCandidate
   { resultCandidateValue :: Either SomeException a
   , resultCandidateDuration :: Duration
