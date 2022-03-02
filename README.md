@@ -18,7 +18,9 @@ Haskell port of
      be available in the `Result c a b` you publish.
    - `a`: The result type of your original (aka "control") code, this is what is
      always returned and so is the return type of `experimentRun`.
-   - `b`: The result type of your experimental (aka "candidate") code.
+   - `b`: The result type of your experimental (aka "candidate") code. It
+     probably won't differ (and must not to use a comparison like `(==)`), but
+     it can (provided you implement a comparison between `a` and `b`).
 
 1. Configure the Experiment as desired
 
