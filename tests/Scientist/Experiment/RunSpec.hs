@@ -114,12 +114,28 @@ spec = do
         _ -> expectationFailure "Expected result to be Mismatched"
 
     it "does not rescue exceptions in the Control branch" $ do
-      let
-        run = experimentRunInternal $ setExperimentTry (pure A) $ newExperiment
-          "test"
-          (throwString "boom")
+      experimentRunInternal (newExperiment "test" (throwString "boom"))
+        `shouldThrow` isStringException "boom"
 
-      run `shouldThrow` isStringException "boom"
+    it "does not rescue exceptions in publishing" $ do
+      experimentRunInternal
+          (setExperimentPublish (\_ -> throwString "boom")
+          $ setExperimentTry (pure B)
+          $ newExperiment "test" (pure A)
+          )
+        `shouldThrow` isStringException "boom"
+
+    it "can be configured to rescue exceptions in publishing" $ do
+      result <-
+        experimentRunInternal
+        $ setExperimentOnException (\_ -> pure ())
+        $ setExperimentPublish (\_ -> throwString "boom")
+        $ setExperimentTry (pure B)
+        $ newExperiment "test" (pure A)
+
+      case result of
+        ResultMismatched{} -> pure ()
+        _ -> expectationFailure "Expected result to be Mismatched"
 
     it "rescues exceptions in the Candidate branch" $ do
       result <-
