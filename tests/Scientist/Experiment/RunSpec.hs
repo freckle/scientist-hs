@@ -35,9 +35,23 @@ spec = do
         ResultSkipped (Control a) -> a `shouldBe` A
         _ -> expectationFailure "Expected result to be Skipped"
 
-    -- it is ResultSkipped based on enabled
+    it "is ResultSkipped based on enabled" $ do
+      result <-
+        experimentRunInternal
+        $ setExperimentEnabled (pure False)
+        $ setExperimentTry (pure A)
+        $ newExperiment "test" (pure A)
 
-    -- it is ResultSkipped when no Candidates present
+      case result of
+        ResultSkipped (Control a) -> a `shouldBe` A
+        _ -> expectationFailure "Expected result to be Skipped"
+
+    it "is ResultSkipped when no Candidates present" $ do
+      result <- experimentRunInternal $ newExperiment "test" (pure A)
+
+      case result of
+        ResultSkipped (Control a) -> a `shouldBe` A
+        _ -> expectationFailure "Expected result to be Skipped"
 
     it "is ResultMatched if all candidates match" $ do
       result <-
