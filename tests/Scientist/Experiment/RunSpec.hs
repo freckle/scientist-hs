@@ -1,4 +1,5 @@
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Scientist.Experiment.RunSpec
@@ -10,6 +11,7 @@ import Prelude
 import Data.Either (partitionEithers)
 import qualified Data.List.NonEmpty as NE
 import Data.Time (NominalDiffTime)
+import Scientist.Candidate
 import Scientist.Control
 import Scientist.Duration
 import Scientist.Experiment
@@ -17,6 +19,7 @@ import Scientist.Experiment.Run
 import Scientist.Result
 import Test.Hspec
 import UnliftIO.Concurrent
+import UnliftIO.Exception (StringException(..), fromException, throwString)
 
 data ExampleResult = A | B | C
   deriving stock (Eq, Show)
@@ -81,15 +84,62 @@ spec = do
 
         _ -> expectationFailure "Expected result to be Matched"
 
-    -- it is ResultIgnored if any candidates are ignored
+    it "is ResultIgnored if any candidates are ignored" $ do
+      let
+        ignoreB _ = \case
+          Right (Candidate B) -> True
+          _ -> False
 
-    -- it is ResultMismatched if any candidates mismatched
+      result <-
+        experimentRunInternal
+        $ setExperimentIgnore ignoreB
+        $ setExperimentTry (pure C)
+        $ setExperimentTry (pure B)
+        $ newExperiment "test" (pure A)
 
-    -- it does not rescue exceptions in the Control branch
+      case result of
+        ResultIgnored{} -> pure ()
+        _ -> expectationFailure "Expected result to be Ignored"
 
-    -- it rescues exceptions in the Candidate branch
+    it "is ResultMismatched if any candidates mismatched" $ do
+      result <-
+        experimentRunInternal
+        $ setExperimentCompare experimentCompareEq
+        $ setExperimentTry (pure B)
+        $ setExperimentTry (pure A)
+        $ newExperiment "test" (pure A)
 
-    -- it errors if no Control present
+      case result of
+        ResultMismatched{} -> pure ()
+        _ -> expectationFailure "Expected result to be Mismatched"
+
+    it "does not rescue exceptions in the Control branch" $ do
+      let
+        run = experimentRunInternal $ setExperimentTry (pure A) $ newExperiment
+          "test"
+          (throwString "boom")
+
+      run `shouldThrow` isStringException "boom"
+
+    it "rescues exceptions in the Candidate branch" $ do
+      result <-
+        experimentRunInternal
+        $ setExperimentTry (throwString "boom")
+        $ newExperiment "test" (pure A)
+
+      case result of
+        ResultMismatched rd -> do
+          let
+            mStringException =
+              either fromException (const Nothing)
+                $ resultCandidateValue
+                $ NE.head
+                $ resultDetailsCandidates rd
+
+          mStringException
+            `shouldSatisfy` maybe False (isStringException "boom")
+
+        _ -> expectationFailure "Expected result to be Mismatched"
 
 isDurationNear :: NominalDiffTime -> Duration -> Bool
 isDurationNear x (Duration nd)
@@ -97,3 +147,7 @@ isDurationNear x (Duration nd)
   | nd > x + tolerance = False
   | otherwise = True
   where tolerance = 0.050
+
+isStringException :: String -> StringException -> Bool
+isStringException a = \case
+  StringException b _cs -> b == a
