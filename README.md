@@ -26,7 +26,7 @@ Haskell port of
 
    ```hs
    setExperimentPublish publish
-     $ setExperimentCompare experimentCompareBy
+     $ setExperimentCompare experimentCompareEq
      $ setExperimentTry theExperimentalCode
      $ newExperiment "some name" theOriginalCode
 
@@ -75,15 +75,12 @@ experimentRun
   $ setExperimentPublish (putStrLn . formatResult)
   -- ...
 
-onScientistException :: ResultControl a -> SomeException -> IO (Result c a b)
-onScientistException r ex = do
+onScientistException :: SomeException -> IO ()
+onScientistException ex = do
   putStringLn "..."
 
   -- To re-raise
   throwIO ex
-
-  -- To ignore
-  pure $ ResultSkipped $ Control $ resultControlValue r
 
 formatResult :: Result c a b -> String
 formatResult = undefined
@@ -98,10 +95,8 @@ experimentRun
   $ newExperiment "users" fetchAllUsers
 ```
 
-If a candidate branch raises an exception, that will never compare equally.
-
-(Exceptions in the control branch are never caught by us, so there's no need to
-consider them here.)
+When using `experimentCompareOn`, `By`, or `Eq`, if a candidate branch raises an
+exception, that will never compare equally.
 
 ### [Adding context](https://github.com/github/scientist#adding-context)
 
@@ -175,6 +170,9 @@ publish result = do
       storeMismatchData result
 ```
 
+See `Result`, `ResultDetails`, `ResultControl` and `ResultCandidate` for all the
+available data you can publish.
+
 ### [Testing](https://github.com/github/scientist#testing)
 
 **TODO**: `raise_on_mismatches`
@@ -188,7 +186,10 @@ publish result = do
 #### [In candidate code](https://github.com/github/scientist#in-candidate-code)
 
 Candidate code is wrapped in `tryAny`, resulting in `Either SomeException`
-values in the result candidates list.
+values in the result candidates list. We use the [safer][blog]
+`UnliftIO.Exception` module.
+
+[blog]: https://www.fpcomplete.com/haskell/tutorial/exceptions/
 
 #### [In a Scientist callback](https://github.com/github/scientist#in-a-scientist-callback)
 
