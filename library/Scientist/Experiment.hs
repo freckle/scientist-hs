@@ -18,6 +18,7 @@ module Scientist.Experiment
 
   -- * Common modifying values
   , experimentCompareEq
+  , experimentCompareOn
   , experimentCompareBy
   , experimentEnabledPercent
 
@@ -38,6 +39,7 @@ import Prelude
 
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Random (evalRandIO, getRandomR)
+import Data.Function (on)
 import Data.List.NonEmpty
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -191,7 +193,15 @@ experimentCompareEq
   :: Eq a => Control a -> Either SomeException (Candidate a) -> Bool
 experimentCompareEq = experimentCompareBy (==)
 
--- | Compare non-exception candidates with the control by some function
+-- | Compare by equality on some function
+--
+-- Exception candidates fail comparison.
+--
+experimentCompareOn
+  :: Eq b => (a -> b) -> Control a -> Either SomeException (Candidate a) -> Bool
+experimentCompareOn f = experimentCompareBy ((==) `on` f)
+
+-- | Compare by some function
 --
 -- Exception candidates fail comparison.
 --
