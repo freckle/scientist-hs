@@ -10,6 +10,7 @@ import Prelude
 import Data.Either (partitionEithers)
 import qualified Data.List.NonEmpty as NE
 import Data.Time (NominalDiffTime)
+import Scientist.Control
 import Scientist.Duration
 import Scientist.Experiment
 import Scientist.Experiment.Run
@@ -23,7 +24,16 @@ data ExampleResult = A | B | C
 spec :: Spec
 spec = do
   describe "experimentRun" $ do
-    -- it is ResultSkipped based on runIf
+    it "is ResultSkipped based on runIf" $ do
+      result <-
+        experimentRunInternal
+        $ setExperimentRunIf False
+        $ setExperimentTry (pure A)
+        $ newExperiment "test" (pure A)
+
+      case result of
+        ResultSkipped (Control a) -> a `shouldBe` A
+        _ -> expectationFailure "Expected result to be Skipped"
 
     -- it is ResultSkipped based on enabled
 

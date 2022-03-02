@@ -30,10 +30,10 @@ experimentRun = fmap resultValue . experimentRunInternal
 experimentRunInternal
   :: MonadUnliftIO m => Experiment m c a b -> m (Result c a b)
 experimentRunInternal ex = do
-  disabled <- experimentDisabled ex
+  enabled <- isExperimentEnabled ex
 
   case getExperimentTries ex of
-    Just candidates | not disabled -> do
+    Just candidates | enabled -> do
       (controlResult, candidateResults) <- runRandomized
         control
         candidates
@@ -49,10 +49,10 @@ experimentRunInternal ex = do
     _ -> ResultSkipped <$> control
   where control = getExperimentUse ex
 
-experimentDisabled :: Applicative m => Experiment m c a b -> m Bool
-experimentDisabled ex
+isExperimentEnabled :: Applicative m => Experiment m c a b -> m Bool
+isExperimentEnabled ex
   | not (getExperimentRunIf ex) = pure False
-  | otherwise = not <$> getExperimentEnabled ex
+  | otherwise = getExperimentEnabled ex
 
 runRandomized
   :: MonadIO m
