@@ -6,6 +6,7 @@ module Scientist.Result
   , resultValue
   , resultDetails
   , ResultDetails(..)
+  , resultDetailsCandidate
   , ResultControl(..)
   , runControl
   , ResultCandidate(..)
@@ -17,6 +18,7 @@ import Prelude
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.IO.Unlift (MonadUnliftIO(..))
 import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NE
 import Data.Text (Text)
 import Scientist.Candidate
 import Scientist.Control
@@ -52,6 +54,9 @@ data ResultDetails c a b = ResultDetails
 
 resultDetailsControlValue :: ResultDetails c a b -> a
 resultDetailsControlValue = resultControlValue . resultDetailsControl
+
+resultDetailsCandidate :: ResultDetails c a b -> ResultCandidate b
+resultDetailsCandidate = NE.head . resultDetailsCandidates
 
 data ResultControl a = ResultControl
   { resultControlValue :: a
