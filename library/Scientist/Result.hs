@@ -4,6 +4,7 @@
 module Scientist.Result
   ( Result(..)
   , resultValue
+  , resultDetails
   , ResultDetails(..)
   , ResultControl(..)
   , runControl
@@ -34,6 +35,13 @@ resultValue = \case
   ResultMatched rd -> resultDetailsControlValue rd
   ResultIgnored rd -> resultDetailsControlValue rd
   ResultMismatched rd -> resultDetailsControlValue rd
+
+resultDetails :: Result c a b -> Maybe (ResultDetails c a b)
+resultDetails = \case
+  ResultSkipped{} -> Nothing
+  ResultMatched rd -> Just rd
+  ResultIgnored rd -> Just rd
+  ResultMismatched rd -> Just rd
 
 data ResultDetails c a b = ResultDetails
   { resultDetailsExperimentName :: Text
