@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 
@@ -15,6 +16,7 @@ import Data.Bitraversable (bimapM)
 import Data.Either (partitionEithers)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NE
+import Data.Text (Text)
 import Scientist.Control
 import Scientist.Duration
 import Scientist.Experiment
@@ -36,15 +38,21 @@ experimentRunInternal
 experimentRunInternal ex = do
   enabled <- isExperimentEnabled ex
 
+  let
+    getName = \case
+      Left{} -> "control"
+      Right nc -> namedCandidateName nc
+
   case getExperimentTries ex of
     Just candidates | enabled -> do
-      (controlResult, candidateResults) <- runRandomized
+      (controlResult, candidateResults, order) <- runRandomized
         control
         candidates
         runControl
         runCandidate
+        getName
 
-      let result = evaluateResult ex controlResult candidateResults
+      let result = evaluateResult ex controlResult candidateResults order
 
       result <$ handleAny
         (getExperimentOnException ex)
@@ -82,15 +90,19 @@ runRandomized
   -> NonEmpty b
   -> (a -> m a') -- ^ How to run the @a@
   -> (b -> m b') -- ^ How to run each @b@
-  -> m (a', NonEmpty b')
-runRandomized a bs runA runB = do
+  -> (Either a b -> Text)
+  -- ^ How to identify each item in the reported order
+  -> m (a', NonEmpty b', [Text])
+runRandomized a bs runA runB toName = do
   inputs <- liftIO $ shuffleM $ Left a : map Right (NE.toList bs)
   outputs <- traverse (bimapM runA runB) inputs
 
-  let partitioned = partitionEithers outputs
+  let
+    order = map toName inputs
+    partitioned = partitionEithers outputs
 
   case second NE.nonEmpty partitioned of
-    ([a'], Just bs') -> pure (a', bs')
+    ([a'], Just bs') -> pure (a', bs', order)
     _ ->
       -- Justification for this being "impossible":
       --

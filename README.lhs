@@ -257,6 +257,7 @@ data MyPayload = MyPayload
   , context :: Maybe MyContext
   , control :: Value
   , candidate :: Value
+  , execution_order :: [Text]
   }
 
 statsdTiming :: Text -> a -> m ()
@@ -321,8 +322,8 @@ storeMismatchData details = do
       , context = eContext
       , control = controlObservationPayload $ resultDetailsControl details
       , candidate = candidateObservationPayload $ resultDetailsCandidate details
+      , execution_order = resultDetailsExecutionOrder details
       }
-      -- NOTE: execution_order not supported
 
     key = "science." <> eName <> ".mismatch"
 

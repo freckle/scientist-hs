@@ -45,6 +45,7 @@ data ResultDetails c a b = ResultDetails
   , resultDetailsExperimentContext :: Maybe c
   , resultDetailsControl :: ResultControl a
   , resultDetailsCandidates :: NonEmpty (ResultCandidate b)
+  , resultDetailsExecutionOrder :: [Text]
   }
 
 resultDetailsControlValue :: ResultDetails c a b -> a
