@@ -16,6 +16,7 @@ library
       Scientist.Duration
       Scientist.Experiment
       Scientist.Experiment.Run
+      Scientist.NamedCandidate
       Scientist.Result
       Scientist.Result.Evaluate
   other-modules:

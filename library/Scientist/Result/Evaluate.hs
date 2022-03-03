@@ -5,6 +5,7 @@ module Scientist.Result.Evaluate
 import Prelude
 
 import Data.List.NonEmpty (NonEmpty)
+import Data.Text (Text)
 import Scientist.Candidate
 import Scientist.Control
 import Scientist.Experiment
@@ -14,8 +15,9 @@ evaluateResult
   :: Experiment m c a b
   -> ResultControl a
   -> NonEmpty (ResultCandidate b)
+  -> [Text]
   -> Result c a b
-evaluateResult ex control candidates
+evaluateResult ex control candidates order
   | any (ignore control) candidates = ResultIgnored details
   | all (match control) candidates = ResultMatched details
   | otherwise = ResultMismatched details
@@ -35,4 +37,5 @@ evaluateResult ex control candidates
     , resultDetailsExperimentContext = getExperimentContext ex
     , resultDetailsControl = control
     , resultDetailsCandidates = candidates
+    , resultDetailsExecutionOrder = order
     }

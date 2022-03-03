@@ -169,6 +169,36 @@ spec = do
 
       expectMismatched result $ \_ -> pure ()
 
+    it "supports implicitly named candidates" $ do
+      result <-
+        experimentRunInternal
+        $ setExperimentCompare experimentCompareEq
+        $ setExperimentTry (pure A)
+        $ setExperimentTry (pure A)
+        $ setExperimentTry (pure A)
+        $ newExperiment "test" (pure A)
+
+      expectMatched result $ \rd -> do
+        resultControlName (resultDetailsControl rd) `shouldBe` "control"
+
+        map resultCandidateName (NE.toList $ resultDetailsCandidates rd)
+          `shouldMatchList` ["candidate", "candidate-1", "candidate-2"]
+
+    it "supports explicitly named candidates" $ do
+      result <-
+        experimentRunInternal
+        $ setExperimentCompare experimentCompareEq
+        $ setExperimentTryNamed "who" (pure A)
+        $ setExperimentTryNamed "what" (pure A)
+        $ setExperimentTryNamed "when" (pure A)
+        $ newExperiment "test" (pure A)
+
+      expectMatched result $ \rd -> do
+        resultControlName (resultDetailsControl rd) `shouldBe` "control"
+
+        map resultCandidateName (NE.toList $ resultDetailsCandidates rd)
+          `shouldMatchList` ["who", "what", "when"]
+
 expectSkippedWith :: (Eq a, Show a) => Result c a b -> a -> IO ()
 expectSkippedWith result a =
   expectSkipped result $ \(Control b) -> b `shouldBe` a

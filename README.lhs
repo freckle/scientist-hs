@@ -257,6 +257,7 @@ data MyPayload = MyPayload
   , context :: Maybe MyContext
   , control :: Value
   , candidate :: Value
+  , execution_order :: [Text]
   }
 
 statsdTiming :: Text -> a -> m ()
@@ -321,8 +322,8 @@ storeMismatchData details = do
       , context = eContext
       , control = controlObservationPayload $ resultDetailsControl details
       , candidate = candidateObservationPayload $ resultDetailsCandidate details
+      , execution_order = resultDetailsExecutionOrder details
       }
-      -- NOTE: execution_order not supported
 
     key = "science." <> eName <> ".mismatch"
 
@@ -390,11 +391,18 @@ If you call `setExperimentTry` more than once, it will append (not overwrite)
 candidate branches. If any candidate is deemed ignored or a mismatch, the
 overall result will be.
 
-**NOTE**: We do not support naming `try` branches.
+`setExperimentTryNamed` can be used to give branches explicit names (otherwise,
+they are "control", "candidate", "candidate-{n}"). These names are visible in
+`ResultControl`, `ResultCandidate`, and `resultDetailsExecutionOrder`.
 
 ### [No control, just candidates](https://github.com/github/scientist#no-control-just-candidates)
 
-Not supported, since we don't support naming `try` branches.
+Not supported.
+
+Supporting the lack of a Control branch in the types would ultimately lead to a
+runtime error if you attempt to run such an `Experiment` without having and
+naming a Candidate to use instead, or severely complicate the types to account
+for that safely. In our opinion, this feature is not worth either of those.
 
 <!--
 ```haskell
