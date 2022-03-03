@@ -143,31 +143,64 @@ experimentRun
 
 publish :: MonadIO m => Results MyContext User User -> m ()
 publish result = do
+  -- Details are present unless it's a ResultSkipped, which we'll ignore
+  for_ (resultDetails result) $ \details -> do
+    let name = resultDetailsExperimentName details
+
+    -- Store the timing for the control value,
+    Statsd.timing ("science." <> name <> ".control")
+      $ resultControlDuration
+      $ resultDetailsControl details
+
+    -- for the candidate (only the first, see "Breaking the rules" below,
+    Statsd.timing ("science." <> name <> ".candidate")
+      $ resultCandidateDuration
+      $ NE.head
+      $ resultDetailsCandidates details
+
+  -- and counts for match/ignore/mismatch:
   case result of
-    ResultSkipped{} -> pure ()
-
     ResultMatched details -> do
-      let name = resultDetailsExperimentName details
-
-      Statsd.timing ("science." <> name <> ".control")
-        $ resultControlDuration
-        $ resultDetailsControl details
-
-      Statsd.timing ("science." <> name <> ".candidate")
-        $ resultCandidateDuration
-        $ NE.head -- See "Breaking the rules" below
-        $ resultDetailsCandidates details
-
       Statsd.increment $ "science." <> name <> ".matched"
-
     ResultIgnored details -> do
-      -- Same timing...
       Statsd.increment $ "science." <> name <> ".ignored"
-
     ResultMismatched details -> do
-      -- Same timing...
       Statsd.increment $ "science." <> name <> ".mismatched"
-      storeMismatchData result
+      -- Finally, store mismatches in redis so they can be retrieved and
+      -- examined later on, for debugging and research.
+      storeMismatchData details
+
+storeMismatchData :: ResultDetails MyContext User User -> m ()
+storeMismatchData details = do
+  let
+    name = resultDetailsExperimentName details
+    context = resultDetailsExperimentContext details
+
+    payload = MyPayload
+      { name = name
+      , context = context
+      , control = controlObservationPayload(resultDetailsControl details)
+      , candidate = candidateObservationPayload(NE.head $ resultCandidates details)
+      , execution_order => result.observations.map(&:name)
+      }
+
+    key = "science.#{name}.mismatch"
+
+  Redis.lpush key payload
+  Redis.ltrim key 0 1000
+
+controlObservationPayload :: ResultControl User -> Value
+controlObservationPayload rc =
+  object ["value" .= cleanValue $ resultControlValue user]
+
+candidateObservationPayload :: ResultCandidate User -> Value
+candidateObservationPayload = \case
+  Left ex -> object ["exception" .= displayException ex]
+  Right rc -> object ["value" .= cleanValue $ resultCandidateValue user]
+
+-- See "Keeping it clean" above
+cleanValue :: User -> Text
+cleanValue = undefined
 ```
 
 See `Result`, `ResultDetails`, `ResultControl` and `ResultCandidate` for all the
