@@ -155,8 +155,7 @@ publish result = do
     -- for the candidate (only the first, see "Breaking the rules" below,
     Statsd.timing ("science." <> name <> ".candidate")
       $ resultCandidateDuration
-      $ NE.head
-      $ resultDetailsCandidates details
+      $ resultDetailsCandidate details
 
   -- and counts for match/ignore/mismatch:
   case result of
@@ -180,7 +179,7 @@ storeMismatchData details = do
       { name = name
       , context = context
       , control = controlObservationPayload(resultDetailsControl details)
-      , candidate = candidateObservationPayload(NE.head $ resultCandidates details)
+      , candidate = candidateObservationPayload(resultDetailsCandidate details)
       , execution_order => result.observations.map(&:name)
       }
 
