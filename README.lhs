@@ -13,14 +13,20 @@ The following extensions are recommended:
 
 <!--
 ```haskell
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE LambdaCase #-}
+
 module Main (module Main) where
 
 import Prelude
 
 import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.IO.Unlift (MonadUnliftIO)
+import Data.Foldable (for_)
 import Data.Text (Text)
-import UnliftIO.Exception (SomeException, throwIO)
+import UnliftIO.Exception (SomeException, throwIO, displayException)
 ```
 -->
 
@@ -65,14 +71,14 @@ theExperimentalCode = undefined
    ```haskell
    ex1 :: (Functor m, Eq a) => Experiment m c a a
    ex1 =
-     setExperimentPublish publish
+     setExperimentPublish publish0
        $ setExperimentCompare experimentCompareEq
        $ setExperimentTry theExperimentalCode
        $ newExperiment "some name" theOriginalCode
 
    -- Increment Statsd, Log, store in Redis, whatever
-   publish :: Result c a b -> m ()
-   publish = undefined
+   publish0 :: Result c a b -> m ()
+   publish0 = undefined
    ```
 
 1. Run the experiment
@@ -81,7 +87,7 @@ theExperimentalCode = undefined
    run0 :: (MonadUnliftIO m, Eq a) => m a
    run0 =
      experimentRun
-       $ setExperimentPublish publish
+       $ setExperimentPublish publish0
        $ setExperimentCompare experimentCompareEq
        $ setExperimentTry theExperimentalCode
        $ newExperiment "some name" theOriginalCode
@@ -229,70 +235,112 @@ run4 =
 
 ### [Publishing results](https://github.com/github/scientist#publishing-results)
 
-```hs
-experimentRun
-  $ setExperimentPublish publish
-  -- ...
+<!--
+```haskell
+data Value = Value
 
-publish :: MonadIO m => Results MyContext User User -> m ()
-publish result = do
+data Pair = Pair
+
+toJSON :: a -> Value
+toJSON = undefined
+
+(.=) :: Text -> a -> Pair
+(.=) = undefined
+
+object :: [Pair] -> Value
+object = undefined
+
+data MyContext = MyContext
+
+data MyPayload = MyPayload
+  { name :: Text
+  , context :: Maybe MyContext
+  , control :: Value
+  , candidate :: Value
+  }
+
+statsdTiming :: Text -> a -> m ()
+statsdTiming = undefined
+
+statsdIncrement :: Text -> m ()
+statsdIncrement = undefined
+
+redisLpush :: Text -> Value -> m ()
+redisLpush = undefined
+
+redisLtrim :: Text -> Int -> Int -> m ()
+redisLtrim = undefined
+```
+-->
+
+```haskell
+run5 :: MonadUnliftIO m => m User
+run5 =
+  experimentRun
+    $ setExperimentPublish publish1
+    $ setExperimentTry theExperimentalCode
+    $ newExperiment "some name" theOriginalCode
+
+publish1 :: MonadIO m => Result MyContext User User -> m ()
+publish1 result = do
   -- Details are present unless it's a ResultSkipped, which we'll ignore
   for_ (resultDetails result) $ \details -> do
-    let name = resultDetailsExperimentName details
+    let eName = resultDetailsExperimentName details
 
     -- Store the timing for the control value,
-    Statsd.timing ("science." <> name <> ".control")
+    statsdTiming ("science." <> eName <> ".control")
       $ resultControlDuration
       $ resultDetailsControl details
 
     -- for the candidate (only the first, see "Breaking the rules" below,
-    Statsd.timing ("science." <> name <> ".candidate")
+    statsdTiming ("science." <> eName <> ".candidate")
       $ resultCandidateDuration
       $ resultDetailsCandidate details
 
-  -- and counts for match/ignore/mismatch:
-  case result of
-    ResultMatched details -> do
-      Statsd.increment $ "science." <> name <> ".matched"
-    ResultIgnored details -> do
-      Statsd.increment $ "science." <> name <> ".ignored"
-    ResultMismatched details -> do
-      Statsd.increment $ "science." <> name <> ".mismatched"
-      -- Finally, store mismatches in redis so they can be retrieved and
-      -- examined later on, for debugging and research.
-      storeMismatchData details
+    -- and counts for match/ignore/mismatch:
+    case result of
+      ResultSkipped{} -> pure ()
+      ResultMatched{} -> do
+        statsdIncrement $ "science." <> eName <> ".matched"
+      ResultIgnored{} -> do
+        statsdIncrement $ "science." <> eName <> ".ignored"
+      ResultMismatched{} -> do
+        statsdIncrement $ "science." <> eName <> ".mismatched"
+        -- Finally, store mismatches in redis so they can be retrieved and
+        -- examined later on, for debugging and research.
+        storeMismatchData details
 
-storeMismatchData :: ResultDetails MyContext User User -> m ()
+storeMismatchData :: Monad m => ResultDetails MyContext User User -> m ()
 storeMismatchData details = do
   let
-    name = resultDetailsExperimentName details
-    context = resultDetailsExperimentContext details
+    eName = resultDetailsExperimentName details
+    eContext = resultDetailsExperimentContext details
 
     payload = MyPayload
-      { name = name
-      , context = context
-      , control = controlObservationPayload(resultDetailsControl details)
-      , candidate = candidateObservationPayload(resultDetailsCandidate details)
-      , execution_order => result.observations.map(&:name)
+      { name = eName
+      , context = eContext
+      , control = controlObservationPayload $ resultDetailsControl details
+      , candidate = candidateObservationPayload $ resultDetailsCandidate details
       }
+      -- NOTE: execution_order not supported
 
-    key = "science.#{name}.mismatch"
+    key = "science." <> eName <> ".mismatch"
 
-  Redis.lpush key payload
-  Redis.ltrim key 0 1000
+  redisLpush key $ toJSON payload
+  redisLtrim key 0 1000
 
 controlObservationPayload :: ResultControl User -> Value
 controlObservationPayload rc =
-  object ["value" .= cleanValue $ resultControlValue user]
+  object ["value" .= cleanValue (resultControlValue rc)]
 
 candidateObservationPayload :: ResultCandidate User -> Value
-candidateObservationPayload = \case
+candidateObservationPayload rc = case resultCandidateValue rc of
   Left ex -> object ["exception" .= displayException ex]
-  Right rc -> object ["value" .= cleanValue $ resultCandidateValue user]
+  Right user -> object ["value" .= cleanValue user]
 
 -- See "Keeping it clean" above
 cleanValue :: User -> Text
-cleanValue = undefined
+cleanValue = userLogin
 ```
 
 See `Result`, `ResultDetails`, `ResultControl` and `ResultCandidate` for all the

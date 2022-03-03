@@ -48,6 +48,6 @@ tests:
     dependencies:
       - markdown-unlit
       - scientist
-      - unliftio
       - text
+      - unliftio
       - unliftio-core
