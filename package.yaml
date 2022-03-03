@@ -41,3 +41,13 @@ tests:
       - scientist
       - time
       - unliftio
+
+  readme:
+    main: README.lhs
+    ghc-options: -pgmL markdown-unlit
+    dependencies:
+      - markdown-unlit
+      - scientist
+      - unliftio
+      - text
+      - unliftio-core
