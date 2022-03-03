@@ -399,10 +399,10 @@ they are "control", "candidate", "candidate-{n}"). These names are visible in
 
 Not supported.
 
-To support the lack of a Control branch in the types would ultimately lead to a
-runtime error if you attempt to run an Experiment that doesn't have one, and
-doesn't have, or hasn't named, a Candidate to use instead. This feature is not
-worth that lack of runtime safety in our opinion.
+Supporting the lack of a Control branch in the types would ultimately lead to a
+runtime error if you attempt to run such an `Experiment` without having and
+naming a Candidate to use instead, or severely complicate the types to account
+for that safely. In our opinion, this feature is not worth either of those.
 
 <!--
 ```haskell
