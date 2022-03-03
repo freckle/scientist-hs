@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 
 module Scientist.Experiment.Run
@@ -60,13 +61,18 @@ isExperimentEnabled ex
 runControl :: MonadIO m => m (Control a) -> m (ResultControl a)
 runControl control = do
   (Control a, d) <- measureDuration control
-  pure ResultControl { resultControlValue = a, resultControlDuration = d }
+  pure ResultControl
+    { resultControlName = "control"
+    , resultControlValue = a
+    , resultControlDuration = d
+    }
 
 runCandidate :: MonadUnliftIO m => NamedCandidate m b -> m (ResultCandidate b)
 runCandidate nc = do
   (b, d) <- measureDuration $ runNamedCandidate nc
   pure $ ResultCandidate
-    { resultCandidateValue = b
+    { resultCandidateName = namedCandidateName nc
+    , resultCandidateValue = b
     , resultCandidateDuration = d
     }
 

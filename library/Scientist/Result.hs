@@ -54,11 +54,13 @@ resultDetailsCandidate :: ResultDetails c a b -> ResultCandidate b
 resultDetailsCandidate = NE.head . resultDetailsCandidates
 
 data ResultControl a = ResultControl
-  { resultControlValue :: a
+  { resultControlName :: Text
+  , resultControlValue :: a
   , resultControlDuration :: Duration
   }
 
 data ResultCandidate a = ResultCandidate
-  { resultCandidateValue :: Either SomeException a
+  { resultCandidateName :: Text
+  , resultCandidateValue :: Either SomeException a
   , resultCandidateDuration :: Duration
   }
