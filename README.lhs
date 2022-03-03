@@ -391,11 +391,18 @@ If you call `setExperimentTry` more than once, it will append (not overwrite)
 candidate branches. If any candidate is deemed ignored or a mismatch, the
 overall result will be.
 
-**NOTE**: We do not support naming `try` branches.
+`setExperimentTryNamed` can be used to give branches explicit names (otherwise,
+they are "control", "candidate", "candidate-{n}"). These names are visible in
+`ResultControl`, `ResultCandidate`, and `resultDetailsExecutionOrder`.
 
 ### [No control, just candidates](https://github.com/github/scientist#no-control-just-candidates)
 
-Not supported, since we don't support naming `try` branches.
+Not supported.
+
+To support the lack of a Control branch in the types would ultimately lead to a
+runtime error if you attempt to run an Experiment that doesn't have one, and
+doesn't have, or hasn't named, a Candidate to use instead. This feature is not
+worth that lack of runtime safety in our opinion.
 
 <!--
 ```haskell
