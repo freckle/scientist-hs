@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Scientist.Experiment
   ( Experiment
@@ -8,6 +9,7 @@ module Scientist.Experiment
 
   -- * Modifiying values
   , setExperimentTry
+  , setExperimentTryNamed
   , setExperimentEnabled
   , setExperimentOnException
   , setExperimentCompare
@@ -42,16 +44,17 @@ import Control.Monad.Random (evalRandIO, getRandomR)
 import Data.Function (on)
 import Data.List.NonEmpty
 import Data.Maybe (fromMaybe)
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import Scientist.Candidate
 import Scientist.Control
+import Scientist.NamedCandidate
 import Scientist.Result
 import UnliftIO.Exception (SomeException, throwIO)
 
 data Experiment m c a b = Experiment
   { experimentName :: Text
   , experimentUse :: m (Control a)
-  , experimentTries :: Maybe (NonEmpty (m (Candidate b)))
+  , experimentTries :: Maybe (NonEmpty (NamedCandidate m b))
   , experimentEnabled :: Maybe (m Bool)
   , experimentOnException :: Maybe (SomeException -> m ())
   , experimentCompare
@@ -61,6 +64,7 @@ data Experiment m c a b = Experiment
       :: Maybe (Control a -> Either SomeException (Candidate b) -> Bool)
   , experimentRunIf :: Maybe Bool
   , experimentPublish :: Maybe (Result c a b -> m ())
+  , experimentCandidateCount :: Int
   }
 
 newExperiment :: Functor m => Text -> m a -> Experiment m c a b
@@ -75,6 +79,7 @@ newExperiment name f = Experiment
   , experimentIgnore = Nothing
   , experimentRunIf = Nothing
   , experimentPublish = Nothing
+  , experimentCandidateCount = 0
   }
 
 -- | A new, candidate code path
@@ -86,11 +91,30 @@ newExperiment name f = Experiment
 --
 setExperimentTry
   :: Functor m => m b -> Experiment m c a b -> Experiment m c a b
-setExperimentTry f ex = ex { experimentTries = Just updated }
+setExperimentTry = setExperimentTryInternal Nothing
+
+setExperimentTryNamed
+  :: Functor m => Text -> m b -> Experiment m c a b -> Experiment m c a b
+setExperimentTryNamed = setExperimentTryInternal . Just
+
+setExperimentTryInternal
+  :: Functor m => Maybe Text -> m b -> Experiment m c a b -> Experiment m c a b
+setExperimentTryInternal mName f ex = ex
+  { experimentTries = Just updated
+  , experimentCandidateCount = updatedCount
+  }
  where
-  thisTry = pure $ Candidate <$> f
+  thisTry = pure $ namedCandidate thisName $ Candidate <$> f
+  thisName = fromMaybe inferName mName
+  inferName = case currentCount of
+    0 -> "candidate"
+    n -> pack $ "candidate-" <> show n
+
   current = experimentTries ex
   updated = maybe thisTry (<> thisTry) current
+
+  currentCount = experimentCandidateCount ex
+  updatedCount = currentCount + 1
 
 -- | If the candidate paths should be executed
 --
@@ -152,7 +176,8 @@ getExperimentName = experimentName
 getExperimentUse :: Experiment m c a b -> m (Control a)
 getExperimentUse = experimentUse
 
-getExperimentTries :: Experiment m c a b -> Maybe (NonEmpty (m (Candidate b)))
+getExperimentTries
+  :: Experiment m c a b -> Maybe (NonEmpty (NamedCandidate m b))
 getExperimentTries = experimentTries
 
 getExperimentEnabled :: Applicative m => Experiment m c a b -> m Bool

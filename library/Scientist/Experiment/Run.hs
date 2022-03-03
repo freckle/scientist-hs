@@ -7,14 +7,17 @@ module Scientist.Experiment.Run
 
 import Prelude
 
-import Control.Monad.IO.Class (MonadIO(liftIO))
+import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.IO.Unlift (MonadUnliftIO(..))
 import Data.Bifunctor (second)
 import Data.Bitraversable (bimapM)
 import Data.Either (partitionEithers)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NE
+import Scientist.Control
+import Scientist.Duration
 import Scientist.Experiment
+import Scientist.NamedCandidate
 import Scientist.Result
 import Scientist.Result.Evaluate
 import System.Random.Shuffle (shuffleM)
@@ -53,6 +56,19 @@ isExperimentEnabled :: Applicative m => Experiment m c a b -> m Bool
 isExperimentEnabled ex
   | not (getExperimentRunIf ex) = pure False
   | otherwise = getExperimentEnabled ex
+
+runControl :: MonadIO m => m (Control a) -> m (ResultControl a)
+runControl control = do
+  (Control a, d) <- measureDuration control
+  pure ResultControl { resultControlValue = a, resultControlDuration = d }
+
+runCandidate :: MonadUnliftIO m => NamedCandidate m b -> m (ResultCandidate b)
+runCandidate nc = do
+  (b, d) <- measureDuration $ runNamedCandidate nc
+  pure $ ResultCandidate
+    { resultCandidateValue = b
+    , resultCandidateDuration = d
+    }
 
 runRandomized
   :: MonadIO m
