@@ -12,6 +12,7 @@ import Prelude
 import Control.Monad.IO.Class (MonadIO(..))
 import qualified System.Clock as Clock
 
+-- | Time elapsed in nano seconds
 newtype Duration = Duration
   { unDuration :: Integer
   }
