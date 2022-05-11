@@ -223,5 +223,5 @@ expectMismatched result f = case result of
   ResultMismatched rd -> f rd
   _ -> expectationFailure "Expected result to be Mismatched"
 
-isDurationNear :: Integer -> Duration -> Bool
-isDurationNear x = isWithinOf x 50_000_000 . toNanoSecs
+isDurationNear :: Duration -> Duration -> Bool
+isDurationNear x = isWithinOf x 50_000_000
