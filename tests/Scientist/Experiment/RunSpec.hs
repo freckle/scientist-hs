@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Scientist.Experiment.RunSpec
@@ -10,7 +11,6 @@ import Scientist.Test
 
 import Data.Either (partitionEithers)
 import qualified Data.List.NonEmpty as NE
-import Data.Time (NominalDiffTime)
 import Scientist.Candidate
 import Scientist.Control
 import Scientist.Duration
@@ -62,7 +62,7 @@ spec = do
 
         let control = resultDetailsControl rd
         resultControlValue control `shouldBe` A
-        resultControlDuration control `shouldSatisfy` isDurationNear 0.100
+        resultControlDuration control `shouldSatisfy` isDurationNear 100_000_000
 
         let
           (failed, succeeded) =
@@ -223,5 +223,5 @@ expectMismatched result f = case result of
   ResultMismatched rd -> f rd
   _ -> expectationFailure "Expected result to be Mismatched"
 
-isDurationNear :: NominalDiffTime -> Duration -> Bool
-isDurationNear x = isWithinOf x 0.050 . unDuration
+isDurationNear :: Integer -> Duration -> Bool
+isDurationNear x = isWithinOf x 50_000_000 . toNanoSecs

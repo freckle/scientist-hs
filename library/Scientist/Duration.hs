@@ -1,21 +1,29 @@
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Scientist.Duration
   ( Duration(..)
   , measureDuration
+  , toNanoSecs
   ) where
 
 import Prelude
 
 import Control.Monad.IO.Class (MonadIO(..))
-import Data.Time (NominalDiffTime, diffUTCTime, getCurrentTime)
+import qualified System.Clock as Clock
 
 newtype Duration = Duration
-  { unDuration :: NominalDiffTime
+  { unDuration :: Integer
   }
   deriving stock (Eq, Show)
+  deriving newtype (Enum, Ord, Num, Real, Integral)
 
 measureDuration :: MonadIO m => m a -> m (a, Duration)
 measureDuration f = do
-  begin <- liftIO getCurrentTime
-  (,) <$> f <*> liftIO (Duration . (`diffUTCTime` begin) <$> getCurrentTime)
+  begin <- liftIO getTime
+  (,) <$> f <*> liftIO
+    (Duration . Clock.toNanoSecs . subtract begin <$> getTime)
+  where getTime = Clock.getTime Clock.Monotonic
+
+toNanoSecs :: Duration -> Integer
+toNanoSecs = unDuration

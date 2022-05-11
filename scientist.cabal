@@ -29,9 +29,9 @@ library
   build-depends:
       MonadRandom
     , base >4 && <5
+    , clock
     , random-shuffle
     , text
-    , time
     , unliftio
     , unliftio-core
   if impl(ghc >= 8.10)
@@ -74,7 +74,6 @@ test-suite spec
       base >4 && <5
     , hspec
     , scientist
-    , time
     , unliftio
   if impl(ghc >= 8.10)
     ghc-options: -Wno-missing-safe-haskell-mode -Wno-prepositive-qualified-module
