@@ -42,27 +42,27 @@ measureDuration f = do
 -- | Convert from duration to seconds
 --
 -- >> toSecs 0.000001
--- >> 0.000001
+-- 0.000001
 toSecs :: Duration -> Double
 toSecs = realToFrac
 
 -- | Convert to duration from seconds
 --
 -- >> toSecs 0.000001
--- >> 0.000001s
+-- 0.000001s
 fromSecs :: Double -> Duration
 fromSecs = realToFrac
 
 -- | Convert from duration to nanoseconds
 --
 -- >> toNanoSecs 0.000001
--- >> 1000
+-- 1000
 toNanoSecs :: Duration -> Integer
 toNanoSecs (Duration (MkFixed x)) = x
 
 -- | Convert to duration from nanoseconds
 --
 -- >> fromNanoSecs 1000
--- >> 0.000001s
+-- 0.000001s
 fromNanoSecs :: Integer -> Duration
 fromNanoSecs = Duration . MkFixed
