@@ -17,9 +17,6 @@ import qualified System.Clock as Clock
 --
 -- >> 1.005
 -- 1.005s
---
--- >> toNanoSecs 1.005
--- 1005000000
 newtype Duration = Duration
   { _unDuration :: Nano
   }
