@@ -4,10 +4,7 @@
 module Scientist.Duration
   ( Duration
   , measureDuration
-  , toSecs
-  , fromSecs
-  , toNanoSecs
-  , fromNanoSecs
+  , durationToSeconds
   ) where
 
 import Prelude
@@ -43,22 +40,8 @@ measureDuration f = do
 --
 -- >> toSecs 0.000001
 -- 0.000001
-toSecs :: Duration -> Double
-toSecs = realToFrac
-
--- | Convert to duration from seconds
---
--- >> fromSecs 0.000001
--- 0.000001s
-fromSecs :: Double -> Duration
-fromSecs = realToFrac
-
--- | Convert from duration to nanoseconds
---
--- >> toNanoSecs 0.000001
--- 1000
-toNanoSecs :: Duration -> Integer
-toNanoSecs (Duration (MkFixed x)) = x
+durationToSeconds :: Duration -> Double
+durationToSeconds = realToFrac
 
 -- | Convert to duration from nanoseconds
 --
