@@ -1,11 +1,11 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-
-
 module Scientist.Duration
   ( Duration
   , measureDuration
+  , toSecs
+  , fromSecs
   , toNanoSecs
   , fromNanoSecs
   ) where
@@ -39,7 +39,21 @@ measureDuration f = do
     (fromNanoSecs . Clock.toNanoSecs . subtract begin <$> getTime)
   where getTime = Clock.getTime Clock.Monotonic
 
--- | Convert to duration from nanoseconds
+-- | Convert from duration to seconds
+--
+-- >> toSecs 0.000001
+-- >> 0.000001
+toSecs :: Duration -> Double
+toSecs = realToFrac
+
+-- | Convert to duration from seconds
+--
+-- >> toSecs 0.000001
+-- >> 0.000001s
+fromSecs :: Double -> Duration
+fromSecs = realToFrac
+
+-- | Convert from duration to nanoseconds
 --
 -- >> toNanoSecs 0.000001
 -- >> 1000
