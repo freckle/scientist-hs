@@ -1,6 +1,5 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Scientist.Experiment.RunSpec
@@ -55,7 +54,7 @@ spec = do
         $ setExperimentCompare experimentCompareEq
         $ setExperimentTry (pure A)
         $ setExperimentTry (pure A)
-        $ newExperiment "test" (A <$ threadDelay 100_000)
+        $ newExperiment "test" (A <$ threadDelay (100 * 1000))
 
       expectMatched result $ \rd -> do
         resultDetailsExperimentName rd `shouldBe` "test"
