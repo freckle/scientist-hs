@@ -48,7 +48,7 @@ toSecs = realToFrac
 
 -- | Convert to duration from seconds
 --
--- >> toSecs 0.000001
+-- >> fromSecs 0.000001
 -- 0.000001s
 fromSecs :: Double -> Duration
 fromSecs = realToFrac
