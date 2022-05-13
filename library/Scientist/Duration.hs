@@ -7,6 +7,7 @@ module Scientist.Duration
   ( Duration
   , measureDuration
   , toNanoSecs
+  , fromNanoSecs
   ) where
 
 import Prelude
@@ -35,8 +36,19 @@ measureDuration :: MonadIO m => m a -> m (a, Duration)
 measureDuration f = do
   begin <- liftIO getTime
   (,) <$> f <*> liftIO
-    (Duration . MkFixed . Clock.toNanoSecs . subtract begin <$> getTime)
+    (fromNanoSecs . Clock.toNanoSecs . subtract begin <$> getTime)
   where getTime = Clock.getTime Clock.Monotonic
 
+-- | Convert to duration from nanoseconds
+--
+-- >> toNanoSecs 0.000001
+-- >> 1000
 toNanoSecs :: Duration -> Integer
 toNanoSecs (Duration (MkFixed x)) = x
+
+-- | Convert to duration from nanoseconds
+--
+-- >> fromNanoSecs 1000
+-- >> 0.000001s
+fromNanoSecs :: Integer -> Duration
+fromNanoSecs = Duration . MkFixed
