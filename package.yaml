@@ -28,7 +28,7 @@ library:
     - MonadRandom
     - random-shuffle
     - text
-    - time
+    - clock
     - unliftio
     - unliftio-core
 
@@ -39,7 +39,6 @@ tests:
     dependencies:
       - hspec
       - scientist
-      - time
       - unliftio
 
   readme:
