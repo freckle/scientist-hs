@@ -55,14 +55,14 @@ spec = do
         $ setExperimentCompare experimentCompareEq
         $ setExperimentTry (pure A)
         $ setExperimentTry (pure A)
-        $ newExperiment "test" (A <$ threadDelay (100 * 1000))
+        $ newExperiment "test" (A <$ threadDelay 100_000)
 
       expectMatched result $ \rd -> do
         resultDetailsExperimentName rd `shouldBe` "test"
 
         let control = resultDetailsControl rd
         resultControlValue control `shouldBe` A
-        resultControlDuration control `shouldSatisfy` isDurationNear 100_000_000
+        resultControlDuration control `shouldSatisfy` isDurationNear 0.100
 
         let
           (failed, succeeded) =
@@ -224,4 +224,4 @@ expectMismatched result f = case result of
   _ -> expectationFailure "Expected result to be Mismatched"
 
 isDurationNear :: Duration -> Duration -> Bool
-isDurationNear x = isWithinOf x 50_000_000
+isDurationNear x = isWithinOf x 0.050
