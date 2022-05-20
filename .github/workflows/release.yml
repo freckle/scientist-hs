@@ -19,4 +19,3 @@ jobs:
         uses: freckle/stack-upload-action@v2
         env:
           HACKAGE_API_KEY: ${{ secrets.HACKAGE_UPLOAD_API_KEY }}
-
