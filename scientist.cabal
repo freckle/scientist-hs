@@ -6,7 +6,17 @@ cabal-version: 1.12
 
 name:           scientist
 version:        0.0.0.0
+synopsis:       A Haskell library for carefully refactoring critical paths.
+description:    Please see README.md
+category:       Utils
+homepage:       https://github.com/freckle/scientist-hs#readme
+bug-reports:    https://github.com/freckle/scientist-hs/issues
+maintainer:     Freckle Education
 build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/freckle/scientist-hs
 
 library
   exposed-modules:
