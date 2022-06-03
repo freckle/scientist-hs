@@ -6,6 +6,10 @@ github: freckle/scientist-hs
 synopsis: A Haskell library for carefully refactoring critical paths.
 description: Please see README.md
 
+extra-doc-files:
+  - README.md
+  - CHANGELOG.md
+
 dependencies:
   - base > 4 && < 5
 
@@ -33,7 +37,6 @@ library:
     - MonadRandom
     - random-shuffle
     - text
-    - clock
     - unliftio
     - unliftio-core
 

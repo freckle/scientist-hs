@@ -11,7 +11,8 @@ import Prelude
 
 import Control.Monad.IO.Class (MonadIO(..))
 import Data.Fixed (Fixed(..), Nano, showFixed)
-import qualified System.Clock as Clock
+import GHC.Clock (getMonotonicTimeNSec)
+import GHC.Word (Word64)
 
 -- | Time elapsed in seconds up to nanosecond precision
 --
@@ -28,10 +29,8 @@ instance Show Duration where
 
 measureDuration :: MonadIO m => m a -> m (a, Duration)
 measureDuration f = do
-  begin <- liftIO getTime
-  (,) <$> f <*> liftIO
-    (fromNanoSecs . Clock.toNanoSecs . subtract begin <$> getTime)
-  where getTime = Clock.getTime Clock.Monotonic
+  begin <- liftIO getMonotonicTimeNSec
+  (,) <$> f <*> liftIO (fromNanoSecs . subtract begin <$> getMonotonicTimeNSec)
 
 -- | Convert from duration to seconds
 --
@@ -44,5 +43,5 @@ durationToSeconds = realToFrac
 --
 -- >> fromNanoSecs 1000
 -- 0.000001s
-fromNanoSecs :: Integer -> Duration
-fromNanoSecs = Duration . MkFixed
+fromNanoSecs :: Word64 -> Duration
+fromNanoSecs = Duration . MkFixed . fromIntegral
