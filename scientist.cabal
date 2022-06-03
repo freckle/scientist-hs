@@ -1,4 +1,4 @@
-cabal-version: 1.12
+cabal-version: 1.18
 
 -- This file has been generated from package.yaml by hpack version 0.34.4.
 --
@@ -12,7 +12,12 @@ category:       Utils
 homepage:       https://github.com/freckle/scientist-hs#readme
 bug-reports:    https://github.com/freckle/scientist-hs/issues
 maintainer:     Freckle Education
+license:        MIT
+license-file:   LICENSE
 build-type:     Simple
+extra-doc-files:
+    README.md
+    CHANGELOG.md
 
 source-repository head
   type: git
@@ -39,7 +44,6 @@ library
   build-depends:
       MonadRandom
     , base >4 && <5
-    , clock
     , random-shuffle
     , text
     , unliftio
