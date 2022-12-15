@@ -1,5 +1,10 @@
 # Scientist
 
+[![Hackage](https://img.shields.io/hackage/v/scientist.svg?style=flat)](https://hackage.haskell.org/package/scientist
+[![Stackage Nightly](http://stackage.org/package/scientist/badge/nightly)](http://stackage.org/nightly/package/scientist)
+[![Stackage LTS](http://stackage.org/package/scientist/badge/lts)](http://stackage.org/lts/package/scientist)
+[![CI](https://github.com/freckle/scientist-hs/actions/workflows/ci.yml/badge.svg)](https://github.com/freckle/scientist-hs/actions/workflows/ci.yml)
+
 Haskell port of
 [`github/scientist`](https://github.com/github/scientist#readme).
 
